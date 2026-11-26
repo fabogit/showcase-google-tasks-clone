@@ -1,62 +1,50 @@
-import React from "react";
-import { Task } from "../types/task";
-import TaskItem from "./TaskItem";
+import type { ReactElement } from "react";
+import type { TaskEntity, TaskListEntity } from "../domain/types";
+import TaskItem, { type TaskUpdatePatch } from "./TaskItem";
 
-/**
- * @interface TaskListProps
- * @description Props for the TaskList component.
- */
 interface TaskListProps {
-  /**
-   * @property tasks - An array of task objects to display.
-   */
-  tasks: Task[];
-  /**
-   * @property onToggleComplete - Callback function passed down to TaskItem for toggling completion.
-   * @param id - The ID of the task to toggle.
-   */
-  onToggleComplete: (id: string) => void;
-  /**
-   * @property onDeleteTask - Callback function passed down to TaskItem for deleting a task.
-   * @param id - The ID of the task to delete.
-   */
-  onDeleteTask: (id: string) => void;
-  /**
-   *
-   * @property onEditTask - Callback function passed down to TaskItem for editing a task.
-   * @param id  - The ID of the task to edit.
-   * @param newText - The updated task text
-   */
-  onEditTask: (id: string, newText: string) => void;
+  readonly tasks: readonly TaskEntity[];
+  readonly lists: readonly TaskListEntity[];
+  readonly listTitleById?: ReadonlyMap<string, string>;
+  readonly expandedTaskId: string | null;
+  readonly onToggleExpand: (taskId: string) => void;
+  readonly onToggleComplete: (taskId: string) => void;
+  readonly onToggleStarred: (taskId: string) => void;
+  readonly onUpdateTask: (taskId: string, patch: TaskUpdatePatch) => void;
+  readonly onMoveTaskToList: (taskId: string, targetListId: string) => void;
+  readonly onDeleteTask: (taskId: string) => void;
 }
 
-/**
- * @component TaskList
- * @description Renders a list of TaskItem components based on the provided tasks array.
- * @param {TaskListProps} props - The props for the component.
- * @returns {React.ReactElement} The rendered unordered list element.
- */
-const TaskList: React.FC<TaskListProps> = ({
+export default function TaskList({
   tasks,
+  lists,
+  listTitleById,
+  expandedTaskId,
+  onToggleExpand,
   onToggleComplete,
+  onToggleStarred,
+  onUpdateTask,
+  onMoveTaskToList,
   onDeleteTask,
-  onEditTask,
-}) => {
+}: TaskListProps): ReactElement {
   return (
     <ul className="task-list">
       {tasks.map((task) => (
         <TaskItem
-          // React key prop
           key={task.id}
           task={task}
-          // Pass down the handlers
+          lists={lists}
+          listTitle={listTitleById?.get(task.listId)}
+          showSubtaskBadge={task.parentId !== null}
+          isExpanded={expandedTaskId === task.id}
+          onToggleExpand={onToggleExpand}
           onToggleComplete={onToggleComplete}
+          onToggleStarred={onToggleStarred}
+          onUpdateTask={onUpdateTask}
+          onMoveTaskToList={onMoveTaskToList}
           onDeleteTask={onDeleteTask}
-          onEditTask={onEditTask}
         />
       ))}
     </ul>
   );
-};
-
-export default TaskList;
+}

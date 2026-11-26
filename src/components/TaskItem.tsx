@@ -1,180 +1,431 @@
-// src/components/TaskItem.tsx
-import React, { useState, useRef, useEffect } from "react";
-import { Task } from "../types/task";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactElement,
+  type ReactNode,
+} from "react";
+import {
+  addCalendarDays,
+  classifyDueDate,
+  formatDueDateLabel,
+  isCalendarDate,
+  todayCalendarDate,
+  type CalendarDate,
+} from "../domain/calendarDate";
+import type { TaskEntity, TaskListEntity } from "../domain/types";
+import {
+  CalendarIcon,
+  EditIcon,
+  FolderMoveIcon,
+  IndentIcon,
+  NotesIcon,
+  OutdentIcon,
+  StarIcon,
+  SubtaskIcon,
+  TrashIcon,
+} from "./Icons";
 
-/**
- * @interface TaskItemProps
- * @description Props for the TaskItem component.
- */
-interface TaskItemProps {
-  task: Task;
-  onToggleComplete: (id: string) => void;
-  onDeleteTask: (id: string) => void;
-  /**
-   * @property {(id: string, newText: string) => void} onEditTask - Callback function invoked when the task text should be updated.
-   * @param {string} id - The ID of the task to edit.
-   * @param {string} newText - The new text for the task.
-   */
-  onEditTask: (id: string, newText: string) => void;
+export interface TaskUpdatePatch {
+  readonly title?: string;
+  readonly notes?: string;
+  readonly dueDate?: CalendarDate | null;
 }
 
-/**
- * @component TaskItem
- * @description Displays a single task item with controls for completion, deletion, and editing.
- * @param {TaskItemProps} props - The props for the component.
- * @returns {React.ReactElement} The rendered list item element.
- */
-const TaskItem: React.FC<TaskItemProps> = ({
+interface TaskItemProps {
+  readonly task: TaskEntity;
+  readonly lists: readonly TaskListEntity[];
+  readonly listTitle?: string;
+  readonly isExpanded: boolean;
+  readonly as?: "li" | "div";
+  readonly isSubtask?: boolean;
+  readonly dragHandle?: ReactNode;
+  readonly canAddSubtask?: boolean;
+  readonly onStartAddSubtask?: (taskId: string) => void;
+  readonly canIndent?: boolean;
+  readonly onIndent?: () => void;
+  readonly canOutdent?: boolean;
+  readonly onOutdent?: () => void;
+  readonly showSubtaskBadge?: boolean;
+  readonly onToggleExpand: (taskId: string) => void;
+  readonly onToggleComplete: (taskId: string) => void;
+  readonly onToggleStarred: (taskId: string) => void;
+  readonly onUpdateTask: (taskId: string, patch: TaskUpdatePatch) => void;
+  readonly onMoveTaskToList: (taskId: string, targetListId: string) => void;
+  readonly onDeleteTask: (taskId: string) => void;
+}
+
+interface TaskDetailsEditorProps {
+  readonly task: TaskEntity;
+  readonly lists: readonly TaskListEntity[];
+  readonly onUpdateTask: (taskId: string, patch: TaskUpdatePatch) => void;
+  readonly onMoveTaskToList: (taskId: string, targetListId: string) => void;
+  readonly onClose: () => void;
+}
+
+function isEditableElement(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+  const tagName = target.tagName;
+  return (
+    tagName === "INPUT" ||
+    tagName === "TEXTAREA" ||
+    tagName === "SELECT" ||
+    target.isContentEditable
+  );
+}
+
+function TaskDetailsEditor({
   task,
-  onToggleComplete,
-  onDeleteTask,
-  onEditTask,
-}) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(task.text);
-  const editInputRef = useRef<HTMLInputElement>(null);
+  lists,
+  onUpdateTask,
+  onMoveTaskToList,
+  onClose,
+}: TaskDetailsEditorProps): ReactElement {
+  const [titleDraft, setTitleDraft] = useState(task.title);
+  const [notesDraft, setNotesDraft] = useState(task.notes);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (isEditing && editInputRef.current) {
-      editInputRef.current.focus();
-      // Optional: Select text on focus
-      // editInputRef.current.select();
-    }
-  }, [isEditing]);
+    titleInputRef.current?.focus();
+  }, []);
 
-  /**
-   * Handles saving the edited task text.
-   * Trims the text and calls onEditTask if the text is valid and changed.
-   * Exits edit mode.
-   */
-  const handleSave = () => {
-    const trimmedText = editText.trim();
-    // Save only if text is not empty AND text has actually changed
-    if (trimmedText && trimmedText !== task.text) {
-      onEditTask(task.id, trimmedText);
-    } else if (!trimmedText) {
-      // If user deletes all text, revert.
-      console.warn("Task text cannot be empty. Reverting changes.");
-      setEditText(task.text);
+  const today = todayCalendarDate();
+  const tomorrow = addCalendarDays(today, 1);
+
+  const commitDraft = () => {
+    const trimmedTitle = titleDraft.trim();
+    const patch: {
+      title?: string;
+      notes?: string;
+    } = {};
+
+    if (trimmedTitle && trimmedTitle !== task.title) {
+      patch.title = trimmedTitle;
     }
-    // Exit editing mode regardless of save success if text was valid or unchanged
-    setIsEditing(false);
+    if (notesDraft !== task.notes) {
+      patch.notes = notesDraft;
+    }
+
+    if (patch.title !== undefined || patch.notes !== undefined) {
+      onUpdateTask(task.id, patch);
+    }
+    onClose();
   };
 
-  /**
-   * Handles canceling the edit operation.
-   * Resets the editText state and exits edit mode.
-   */
-  const handleCancel = () => {
-    // Reset text to original
-    setEditText(task.text);
-    setIsEditing(false);
-  };
-
-  /**
-   * Handles key down events on the input field (Enter to save, Escape to cancel).
-   * @param {React.KeyboardEvent<HTMLInputElement>} event - The keyboard event.
-   */
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleTitleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
-      handleSave();
+      event.preventDefault();
+      commitDraft();
     } else if (event.key === "Escape") {
-      handleCancel();
+      event.preventDefault();
+      onClose();
     }
   };
 
-  /**
-   * Enters edit mode. Sets the editText initial value.
-   * Only enters edit mode if the task is not completed.
-   */
-  const handleEditClick = () => {
-    if (task.isCompleted) return;
-    setEditText(task.text);
-    setIsEditing(true);
+  const handleNotesKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onClose();
+    }
   };
 
   return (
-    <li
-      className={`task-item ${task.isCompleted ? "completed" : ""} ${
-        isEditing ? "editing" : ""
-      }`}
-    >
+    <div className="task-details-editor">
       <input
-        type="checkbox"
-        checked={task.isCompleted}
-        onChange={() => onToggleComplete(task.id)}
-        className="task-checkbox"
-        aria-label={`Mark task "${task.text}" as ${
-          task.isCompleted ? "incomplete" : "complete"
-        }`}
-        // Keep checkbox disabled while editing
-        disabled={isEditing}
+        ref={titleInputRef}
+        type="text"
+        className="details-title-input"
+        value={titleDraft}
+        onChange={(event) => setTitleDraft(event.target.value)}
+        onKeyDown={handleTitleKeyDown}
+        aria-label={`Edit title for "${task.title}"`}
       />
 
-      {isEditing ? (
-        // --- Edit Mode UI ---
-        <div className="edit-container">
-          <input
-            ref={editInputRef}
-            type="text"
-            value={editText}
-            onChange={(e) => setEditText(e.target.value)}
-            onKeyDown={handleKeyDown}
-            // Removed onBlur={handleSave}
-            className="edit-input"
-            aria-label={`Edit task text for "${task.text}"`}
-          />
-          {/* Explicit Save/Cancel buttons */}
-          <div className="edit-actions">
-            <button
-              onClick={handleSave}
-              className="save-button"
-              aria-label="Save task changes"
-            >
-              Save
-            </button>
-            <button
-              onClick={handleCancel}
-              className="cancel-button"
-              aria-label="Cancel task editing"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : (
-        // --- View Mode UI ---
-        <>
-          {/* Add conditional disabling for double-click as well if desired */}
-          <span
-            className={`task-text ${task.isCompleted ? "no-edit" : ""}`} // Add class if completed
-            onDoubleClick={!task.isCompleted ? handleEditClick : undefined} // Disable dblclick if completed
-            title={task.isCompleted ? task.text : "Double-click to edit"} // Change title if completed
-          >
-            {task.text}
-          </span>
-          <div className="task-actions">
-            <button
-              onClick={handleEditClick}
-              className="edit-task-button"
-              aria-label={`Edit task "${task.text}"`}
-              // Explicitly disable button if completed
-              disabled={task.isCompleted}
-            >
-              Edit
-            </button>
-            <button
-              onClick={() => onDeleteTask(task.id)}
-              className="delete-task-button"
-              aria-label={`Delete task "${task.text}"`}
-            >
-              Delete
-            </button>
-          </div>
-        </>
-      )}
-    </li>
-  );
-};
+      <div className="details-field">
+        <NotesIcon className="details-field-icon" />
+        <textarea
+          className="details-notes-input"
+          value={notesDraft}
+          onChange={(event) => setNotesDraft(event.target.value)}
+          onKeyDown={handleNotesKeyDown}
+          placeholder="Add details"
+          rows={2}
+          aria-label="Task notes"
+        />
+      </div>
 
-export default TaskItem;
+      <div className="details-meta-row">
+        <div className="details-due-controls">
+          <CalendarIcon className="details-field-icon" />
+          <button
+            type="button"
+            className={`due-preset-button ${task.dueDate === today ? "active" : ""}`}
+            onClick={() => onUpdateTask(task.id, { dueDate: today })}
+          >
+            Today
+          </button>
+          <button
+            type="button"
+            className={`due-preset-button ${task.dueDate === tomorrow ? "active" : ""}`}
+            onClick={() => onUpdateTask(task.id, { dueDate: tomorrow })}
+          >
+            Tomorrow
+          </button>
+          <input
+            type="date"
+            className="details-date-input"
+            value={task.dueDate ?? ""}
+            aria-label="Due date"
+            onChange={(event) => {
+              const value = event.target.value;
+              if (!value) {
+                onUpdateTask(task.id, { dueDate: null });
+              } else if (isCalendarDate(value)) {
+                onUpdateTask(task.id, { dueDate: value });
+              }
+            }}
+          />
+          {task.dueDate !== null ? (
+            <button
+              type="button"
+              className="due-preset-button"
+              onClick={() => onUpdateTask(task.id, { dueDate: null })}
+            >
+              Clear
+            </button>
+          ) : null}
+        </div>
+
+        {lists.length > 1 ? (
+          <div className="details-move-control">
+            <FolderMoveIcon className="details-field-icon" />
+            <select
+              className="details-move-select"
+              aria-label="Move to list"
+              value={task.listId}
+              onChange={(event) => onMoveTaskToList(task.id, event.target.value)}
+            >
+              {lists.map((list) => (
+                <option key={list.id} value={list.id}>
+                  {list.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="details-actions">
+        <button type="button" className="cancel-button" onClick={onClose}>
+          Cancel
+        </button>
+        <button type="button" className="save-button" onClick={commitDraft}>
+          Save
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function TaskItem({
+  task,
+  lists,
+  listTitle,
+  isExpanded,
+  as = "li",
+  isSubtask = false,
+  dragHandle,
+  canAddSubtask = false,
+  onStartAddSubtask,
+  canIndent = false,
+  onIndent,
+  canOutdent = false,
+  onOutdent,
+  showSubtaskBadge = false,
+  onToggleExpand,
+  onToggleComplete,
+  onToggleStarred,
+  onUpdateTask,
+  onMoveTaskToList,
+  onDeleteTask,
+}: TaskItemProps): ReactElement {
+  const showEditor = isExpanded && !task.isCompleted;
+  const dueStatus = task.dueDate ? classifyDueDate(task.dueDate) : null;
+  const dueLabel = task.dueDate ? formatDueDateLabel(task.dueDate) : null;
+  const hasNotesPreview = !showEditor && task.notes.trim().length > 0;
+  const rowRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const rowElement = rowRef.current;
+    if (!rowElement || (!canIndent && !canOutdent)) {
+      return;
+    }
+
+    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (isEditableElement(event.target)) {
+        return;
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.key === "]") {
+        if (canIndent && onIndent) {
+          event.preventDefault();
+          onIndent();
+        }
+        return;
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.key === "[") {
+        if (canOutdent && onOutdent) {
+          event.preventDefault();
+          onOutdent();
+        }
+      }
+    };
+
+    rowElement.addEventListener("keydown", handleKeyDown);
+    return () => {
+      rowElement.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [canIndent, canOutdent, onIndent, onOutdent]);
+
+  const Container = as;
+
+  return (
+    <Container
+      className={`task-item ${isSubtask ? "subtask-item" : ""} ${
+        task.isCompleted ? "completed" : ""
+      } ${showEditor ? "editing" : ""}`}
+    >
+      <div ref={rowRef} className="task-row">
+        {dragHandle}
+
+        <input
+          type="checkbox"
+          checked={task.isCompleted}
+          onChange={() => onToggleComplete(task.id)}
+          className="task-checkbox"
+          aria-label={`Mark task "${task.title}" as ${
+            task.isCompleted ? "incomplete" : "complete"
+          }`}
+        />
+
+        <div className="task-main">
+          <span
+            className={`task-text ${task.isCompleted ? "no-edit" : ""}`}
+            onDoubleClick={!task.isCompleted ? () => onToggleExpand(task.id) : undefined}
+            title={task.isCompleted ? task.title : "Double-click to edit details"}
+          >
+            {task.title}
+          </span>
+
+          {hasNotesPreview ? <p className="task-notes-preview">{task.notes}</p> : null}
+
+          {dueLabel || listTitle || showSubtaskBadge ? (
+            <div className="task-chips">
+              {dueLabel && dueStatus ? (
+                <span className={`due-chip due-chip--${dueStatus}`}>
+                  <CalendarIcon size={12} />
+                  <span>{dueLabel}</span>
+                </span>
+              ) : null}
+              {showSubtaskBadge ? <span className="subtask-badge">Subtask</span> : null}
+              {listTitle ? <span className="task-list-badge">{listTitle}</span> : null}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="task-actions">
+          {!task.isCompleted ? (
+            <>
+              {canAddSubtask && onStartAddSubtask ? (
+                <button
+                  type="button"
+                  onClick={() => onStartAddSubtask(task.id)}
+                  className="icon-button icon-button-sm"
+                  aria-label={`Add subtask to "${task.title}"`}
+                  title="Add a subtask"
+                >
+                  <SubtaskIcon />
+                </button>
+              ) : null}
+
+              {canIndent && onIndent ? (
+                <button
+                  type="button"
+                  onClick={onIndent}
+                  className="icon-button icon-button-sm"
+                  aria-label={`Make "${task.title}" a subtask`}
+                  title="Make subtask (Ctrl+])"
+                >
+                  <IndentIcon />
+                </button>
+              ) : null}
+
+              {canOutdent && onOutdent ? (
+                <button
+                  type="button"
+                  onClick={onOutdent}
+                  className="icon-button icon-button-sm"
+                  aria-label={`Move "${task.title}" to top level`}
+                  title="Move to top level (Ctrl+[)"
+                >
+                  <OutdentIcon />
+                </button>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={() => onToggleExpand(task.id)}
+                className="icon-button icon-button-sm"
+                aria-label={`Edit task "${task.title}"`}
+                aria-expanded={showEditor}
+                title="Edit details"
+              >
+                <EditIcon />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onToggleStarred(task.id)}
+                className={`icon-button icon-button-sm star-button ${
+                  task.isStarred ? "starred" : ""
+                }`}
+                aria-label={
+                  task.isStarred ? `Remove star from "${task.title}"` : `Star task "${task.title}"`
+                }
+                aria-pressed={task.isStarred}
+                title={task.isStarred ? "Remove star" : "Add to Starred"}
+              >
+                <StarIcon size={16} filled={task.isStarred} />
+              </button>
+            </>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={() => onDeleteTask(task.id)}
+            className="icon-button icon-button-sm delete-icon-button"
+            aria-label={`Delete task "${task.title}"`}
+            title="Delete task"
+          >
+            <TrashIcon />
+          </button>
+        </div>
+      </div>
+
+      {showEditor ? (
+        <TaskDetailsEditor
+          key={task.id}
+          task={task}
+          lists={lists}
+          onUpdateTask={onUpdateTask}
+          onMoveTaskToList={onMoveTaskToList}
+          onClose={() => onToggleExpand(task.id)}
+        />
+      ) : null}
+    </Container>
+  );
+}
