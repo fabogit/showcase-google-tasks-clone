@@ -142,8 +142,8 @@ export interface WorkspaceSnapshotV2 {
 
 ### Prerequisites
 
-- **Node.js:** `>= 22.18.0` (`^22.18.0 || ^24.11.0 || >=26.0.0`)
-- **Package Manager:** `pnpm` (`>= 11.x`)
+- **Node.js:** `>= 26.13.1` (pinned in [`.node-version`](.node-version) and `package.json#engines`)
+- **Package Manager:** `pnpm` (`>= 12.23.0`, managed via `packageManager` / Corepack)
 
 ```bash
 corepack enable pnpm
