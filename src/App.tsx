@@ -360,13 +360,15 @@ function App({ repository }: AppProps): ReactElement {
           />
         )}
 
-        <CompletedSection
-          completedTasks={listGroups.completedTasks}
-          lists={lists}
-          onToggleComplete={handleToggleComplete}
-          onDeleteTask={handleDeleteTask}
-          onClearCompleted={handleClearCompleted}
-        />
+        {listGroups.completedCount > 0 ? (
+          <CompletedSection
+            completedItems={listGroups.completedItems}
+            completedCount={listGroups.completedCount}
+            onToggleComplete={handleToggleComplete}
+            onDeleteTask={handleDeleteTask}
+            onClearCompleted={handleClearCompleted}
+          />
+        ) : null}
       </>
     );
   };

@@ -160,4 +160,95 @@ describe("selectors", () => {
     ]);
     expect(selectGlobalSearchResults(SAMPLE_TASKS, [LIST_1], "   ")).toEqual([]);
   });
+
+  it("preserves completed hierarchy and annotates completed subtasks of active parents", () => {
+    const completedTreeTasks: readonly TaskEntity[] = [
+      {
+        id: "cp-root",
+        listId: "l1",
+        parentId: null,
+        title: "Completed parent",
+        notes: "",
+        dueDate: null,
+        isCompleted: true,
+        isStarred: false,
+        position: 0,
+        createdAt: 1,
+        updatedAt: 100,
+        completedAt: 100,
+      },
+      {
+        id: "cp-sub-2",
+        listId: "l1",
+        parentId: "cp-root",
+        title: "Completed child second",
+        notes: "",
+        dueDate: null,
+        isCompleted: true,
+        isStarred: false,
+        position: 1,
+        createdAt: 2,
+        updatedAt: 100,
+        completedAt: 100,
+      },
+      {
+        id: "cp-sub-1",
+        listId: "l1",
+        parentId: "cp-root",
+        title: "Completed child first",
+        notes: "",
+        dueDate: null,
+        isCompleted: true,
+        isStarred: false,
+        position: 0,
+        createdAt: 3,
+        updatedAt: 100,
+        completedAt: 100,
+      },
+      {
+        id: "active-parent",
+        listId: "l1",
+        parentId: null,
+        title: "Open parent",
+        notes: "",
+        dueDate: null,
+        isCompleted: false,
+        isStarred: false,
+        position: 1,
+        createdAt: 4,
+        updatedAt: 50,
+        completedAt: null,
+      },
+      {
+        id: "done-under-active",
+        listId: "l1",
+        parentId: "active-parent",
+        title: "Finished step",
+        notes: "",
+        dueDate: null,
+        isCompleted: true,
+        isStarred: false,
+        position: 0,
+        createdAt: 5,
+        updatedAt: 120,
+        completedAt: 120,
+      },
+    ];
+
+    const groups = selectListTaskGroups(completedTreeTasks, LIST_1);
+    expect(groups.completedCount).toBe(4);
+    expect(groups.completedItems).toHaveLength(2);
+    expect(groups.completedItems[0]).toMatchObject({
+      task: { id: "done-under-active" },
+      subtasks: [],
+      activeParentTitle: "Open parent",
+    });
+    expect(groups.completedItems[1].task.id).toBe("cp-root");
+    expect(groups.completedItems[1].subtasks.map((s) => s.id)).toEqual(["cp-sub-1", "cp-sub-2"]);
+
+    const filtered = selectListTaskGroups(completedTreeTasks, LIST_1, "first");
+    expect(filtered.completedItems).toHaveLength(1);
+    expect(filtered.completedItems[0].task.id).toBe("cp-root");
+    expect(filtered.completedItems[0].subtasks.map((s) => s.id)).toEqual(["cp-sub-1"]);
+  });
 });

@@ -109,6 +109,23 @@ describe("workspaceReducer", () => {
     expect(byId.get("c1")?.isCompleted).toBe(false);
     expect(byId.get("p1")?.isCompleted).toBe(false);
     expect(byId.get("c2")?.isCompleted).toBe(true);
+
+    // Completing parent again completes remaining active child, and reopening parent reopens all subtasks
+    state = workspaceReducer(state, {
+      type: "TOGGLE_TASK_COMPLETED",
+      taskId: "p1",
+      now: 40,
+      undoId: "u3",
+    });
+    expect(state.snapshot.tasks.every((t) => t.isCompleted)).toBe(true);
+
+    state = workspaceReducer(state, {
+      type: "TOGGLE_TASK_COMPLETED",
+      taskId: "p1",
+      now: 50,
+      undoId: "u4",
+    });
+    expect(state.snapshot.tasks.every((t) => !t.isCompleted)).toBe(true);
   });
 
   it("deletes parent + subtasks atomically and supports undo + dismiss", () => {
