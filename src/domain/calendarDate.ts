@@ -97,3 +97,31 @@ export function classifyDueDate(
 
   return "upcoming";
 }
+
+/**
+ * Formats a `CalendarDate` into a concise human-readable label relative to `today`.
+ */
+export function formatDueDateLabel(
+  dueDate: CalendarDate,
+  today: CalendarDate = todayCalendarDate(),
+): string {
+  if (dueDate === today) {
+    return "Today";
+  }
+  if (dueDate === addCalendarDays(today, 1)) {
+    return "Tomorrow";
+  }
+  if (dueDate === addCalendarDays(today, -1)) {
+    return "Yesterday";
+  }
+
+  const { year, month, day } = parseCalendarDateParts(dueDate);
+  const { year: todayYear } = parseCalendarDateParts(today);
+  const sameYear = year === todayYear;
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    ...(sameYear ? {} : { year: "numeric" }),
+  }).format(new Date(year, month - 1, day));
+}

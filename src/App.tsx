@@ -1,9 +1,12 @@
-import { useMemo, useState, type ReactElement } from "react";
+import { useCallback, useMemo, useState, type ReactElement } from "react";
 import AddTaskForm from "./components/AddTaskForm";
+import { CompletedSection } from "./components/CompletedSection";
 import { Header } from "./components/Header";
 import { AlertIcon, CloseIcon } from "./components/Icons";
 import { Sidebar, type SidebarActiveView } from "./components/Sidebar";
+import type { TaskUpdatePatch } from "./components/TaskItem";
 import TaskList from "./components/TaskList";
+import { UndoSnackbar } from "./components/UndoSnackbar";
 import {
   selectGlobalSearchResults,
   selectListTaskGroups,
@@ -29,6 +32,7 @@ function App({ repository }: AppProps): ReactElement {
   const [selectedView, setSelectedView] = useState<ActiveView | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
 
   const { lists, tasks } = state.snapshot;
 
@@ -66,15 +70,21 @@ function App({ repository }: AppProps): ReactElement {
 
   const listGroups = useMemo(() => selectListTaskGroups(tasks, activeList), [activeList, tasks]);
 
-  const activeListTasks = useMemo(() => {
-    const items = listGroups.activeItems.flatMap((item) => [item.task, ...item.subtasks]);
-    return [...items, ...listGroups.completedTasks];
-  }, [listGroups]);
+  const activeListTasks = useMemo(
+    () => listGroups.activeItems.flatMap((item) => [item.task, ...item.subtasks]),
+    [listGroups],
+  );
+
+  const handleSelectView = (view: ActiveView) => {
+    setSelectedView(view);
+    setExpandedTaskId(null);
+  };
 
   const handleCreateList = (title: string) => {
     const id = createId();
     dispatch({ type: "ADD_LIST", id, title, now: Date.now() });
     setSelectedView({ kind: "list", listId: id });
+    setExpandedTaskId(null);
   };
 
   const handleRenameList = (listId: string, title: string) => {
@@ -88,6 +98,7 @@ function App({ repository }: AppProps): ReactElement {
       now: Date.now(),
       undoId: createId(),
     });
+    setExpandedTaskId(null);
   };
 
   const handleAddTask = (title: string) => {
@@ -100,7 +111,25 @@ function App({ repository }: AppProps): ReactElement {
     });
   };
 
+  const handleAddStarredTask = (title: string) => {
+    dispatch({
+      type: "ADD_TASK",
+      id: createId(),
+      listId: lists[0].id,
+      title,
+      isStarred: true,
+      now: Date.now(),
+    });
+  };
+
+  const handleToggleExpand = (taskId: string) => {
+    setExpandedTaskId((prev) => (prev === taskId ? null : taskId));
+  };
+
   const handleToggleComplete = (taskId: string) => {
+    if (expandedTaskId === taskId) {
+      setExpandedTaskId(null);
+    }
     dispatch({
       type: "TOGGLE_TASK_COMPLETED",
       taskId,
@@ -109,16 +138,39 @@ function App({ repository }: AppProps): ReactElement {
     });
   };
 
-  const handleEditTask = (taskId: string, newTitle: string) => {
+  const handleToggleStarred = (taskId: string) => {
+    dispatch({
+      type: "TOGGLE_TASK_STARRED",
+      taskId,
+      now: Date.now(),
+    });
+  };
+
+  const handleUpdateTask = (taskId: string, patch: TaskUpdatePatch) => {
     dispatch({
       type: "UPDATE_TASK",
       taskId,
-      patch: { title: newTitle },
+      patch,
+      now: Date.now(),
+    });
+  };
+
+  const handleMoveTaskToList = (taskId: string, targetListId: string) => {
+    if (expandedTaskId === taskId) {
+      setExpandedTaskId(null);
+    }
+    dispatch({
+      type: "MOVE_TASK_TO_LIST",
+      taskId,
+      targetListId,
       now: Date.now(),
     });
   };
 
   const handleDeleteTask = (taskId: string) => {
+    if (expandedTaskId === taskId) {
+      setExpandedTaskId(null);
+    }
     dispatch({
       type: "DELETE_TASK",
       taskId,
@@ -126,6 +178,24 @@ function App({ repository }: AppProps): ReactElement {
       undoId: createId(),
     });
   };
+
+  const handleClearCompleted = () => {
+    dispatch({
+      type: "CLEAR_COMPLETED_TASKS",
+      listId: activeList.id,
+      now: Date.now(),
+      undoId: createId(),
+    });
+  };
+
+  const handleUndo = useCallback(() => {
+    setExpandedTaskId(null);
+    dispatch({ type: "UNDO" });
+  }, [dispatch]);
+
+  const handleDismissUndo = useCallback(() => {
+    dispatch({ type: "DISMISS_UNDO" });
+  }, [dispatch]);
 
   const renderMainContent = (): ReactElement => {
     if (isHydrating) {
@@ -147,10 +217,15 @@ function App({ repository }: AppProps): ReactElement {
           ) : (
             <TaskList
               tasks={globalSearchResults.map((entry) => entry.task)}
+              lists={lists}
               listTitleById={listTitleById}
+              expandedTaskId={expandedTaskId}
+              onToggleExpand={handleToggleExpand}
               onToggleComplete={handleToggleComplete}
+              onToggleStarred={handleToggleStarred}
+              onUpdateTask={handleUpdateTask}
+              onMoveTaskToList={handleMoveTaskToList}
               onDeleteTask={handleDeleteTask}
-              onEditTask={handleEditTask}
             />
           )}
         </>
@@ -164,15 +239,23 @@ function App({ repository }: AppProps): ReactElement {
             <h2>Starred</h2>
             <span className="tasks-card-subtitle">{starredTasks.length} active</span>
           </div>
+
+          <AddTaskForm onAddTask={handleAddStarredTask} placeholder="Add a starred task..." />
+
           {starredTasks.length === 0 ? (
             <p className="empty-state">No starred tasks yet.</p>
           ) : (
             <TaskList
               tasks={starredTasks}
+              lists={lists}
               listTitleById={listTitleById}
+              expandedTaskId={expandedTaskId}
+              onToggleExpand={handleToggleExpand}
               onToggleComplete={handleToggleComplete}
+              onToggleStarred={handleToggleStarred}
+              onUpdateTask={handleUpdateTask}
+              onMoveTaskToList={handleMoveTaskToList}
               onDeleteTask={handleDeleteTask}
-              onEditTask={handleEditTask}
             />
           )}
         </>
@@ -188,16 +271,31 @@ function App({ repository }: AppProps): ReactElement {
 
         <AddTaskForm onAddTask={handleAddTask} />
 
-        {activeListTasks.length === 0 ? (
+        {activeListTasks.length === 0 && listGroups.completedCount === 0 ? (
           <p className="empty-state">No tasks yet. Add one!</p>
+        ) : activeListTasks.length === 0 ? (
+          <p className="empty-state">All tasks completed!</p>
         ) : (
           <TaskList
             tasks={activeListTasks}
+            lists={lists}
+            expandedTaskId={expandedTaskId}
+            onToggleExpand={handleToggleExpand}
             onToggleComplete={handleToggleComplete}
+            onToggleStarred={handleToggleStarred}
+            onUpdateTask={handleUpdateTask}
+            onMoveTaskToList={handleMoveTaskToList}
             onDeleteTask={handleDeleteTask}
-            onEditTask={handleEditTask}
           />
         )}
+
+        <CompletedSection
+          completedTasks={listGroups.completedTasks}
+          lists={lists}
+          onToggleComplete={handleToggleComplete}
+          onDeleteTask={handleDeleteTask}
+          onClearCompleted={handleClearCompleted}
+        />
       </>
     );
   };
@@ -219,7 +317,7 @@ function App({ repository }: AppProps): ReactElement {
           tasks={tasks}
           activeView={activeView}
           isOpen={isSidebarOpen}
-          onSelectView={setSelectedView}
+          onSelectView={handleSelectView}
           onCreateList={handleCreateList}
           onRenameList={handleRenameList}
           onDeleteList={handleDeleteList}
@@ -247,6 +345,8 @@ function App({ repository }: AppProps): ReactElement {
           </section>
         </main>
       </div>
+
+      <UndoSnackbar undoEntry={state.undoEntry} onUndo={handleUndo} onDismiss={handleDismissUndo} />
     </div>
   );
 }

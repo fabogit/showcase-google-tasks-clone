@@ -3,6 +3,7 @@ import {
   addCalendarDays,
   classifyDueDate,
   compareCalendarDates,
+  formatDueDateLabel,
   isCalendarDate,
   toCalendarDate,
   todayCalendarDate,
@@ -47,5 +48,14 @@ describe("calendarDate", () => {
     expect(classifyDueDate("2026-11-26", today)).toBe("today");
     expect(classifyDueDate("2026-11-27", today)).toBe("tomorrow");
     expect(classifyDueDate("2026-12-05", today)).toBe("upcoming");
+  });
+
+  it("formats relative and absolute due date labels", () => {
+    const today = "2026-11-26";
+    expect(formatDueDateLabel("2026-11-26", today)).toBe("Today");
+    expect(formatDueDateLabel("2026-11-27", today)).toBe("Tomorrow");
+    expect(formatDueDateLabel("2026-11-25", today)).toBe("Yesterday");
+    expect(formatDueDateLabel("2026-12-15", today)).toBe("Dec 15");
+    expect(formatDueDateLabel("2027-01-05", today)).toBe("Jan 5, 2027");
   });
 });
