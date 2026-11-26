@@ -813,6 +813,108 @@
   font-size: 14px;
 }
 
+/* List Sort Selector & Hierarchical Subtasks */
+.tasks-card-header-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.sort-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 13px;
+}
+
+.sort-control select {
+  height: 32px;
+  padding: 0 8px;
+  border-radius: var(--md-radius-sm);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  background-color: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.task-tree-group {
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.task-tree-group:last-child {
+  border-bottom: none;
+}
+
+.task-tree-group > .task-item {
+  border-bottom: none;
+}
+
+.task-tree-group.dragging,
+.sortable-subtask-row.dragging {
+  opacity: 0.72;
+  background-color: var(--md-sys-color-surface-container);
+  border-radius: var(--md-radius-sm);
+  box-shadow: var(--md-elevation-2);
+}
+
+.drag-handle {
+  cursor: grab;
+  touch-action: none;
+  margin-top: -4px;
+  color: var(--md-sys-color-outline);
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.subtask-list {
+  list-style: none;
+  margin: 0 0 6px 28px;
+  padding: 0 0 0 12px;
+  border-left: 2px solid var(--md-sys-color-outline-variant);
+}
+
+.sortable-subtask-row > .subtask-item {
+  border-bottom: none;
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+.subtask-badge {
+  padding: 2px 8px;
+  border-radius: var(--md-radius-pill);
+  background-color: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.inline-subtask-form {
+  margin: 4px 8px 8px 36px;
+  padding: 8px;
+  border-radius: var(--md-radius-sm);
+  background-color: var(--md-sys-color-surface-container-low);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inline-subtask-input {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--md-radius-sm);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  background-color: var(--md-sys-color-surface);
+  font-size: 13px;
+}
+
 /* Responsive Drawer */
 @media (max-width: 840px) {
   .menu-toggle-button {

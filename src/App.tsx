@@ -2,16 +2,19 @@ import { useCallback, useMemo, useState, type ReactElement } from "react";
 import AddTaskForm from "./components/AddTaskForm";
 import { CompletedSection } from "./components/CompletedSection";
 import { Header } from "./components/Header";
-import { AlertIcon, CloseIcon } from "./components/Icons";
+import { AlertIcon, CloseIcon, SortIcon } from "./components/Icons";
 import { Sidebar, type SidebarActiveView } from "./components/Sidebar";
 import type { TaskUpdatePatch } from "./components/TaskItem";
 import TaskList from "./components/TaskList";
+import { TaskTreeList } from "./components/TaskTreeList";
 import { UndoSnackbar } from "./components/UndoSnackbar";
+import { isSortMode } from "./domain/schema";
 import {
   selectGlobalSearchResults,
   selectListTaskGroups,
   selectStarredTasks,
 } from "./domain/selectors";
+import type { SortMode } from "./domain/types";
 import { useTheme } from "./hooks/useTheme";
 import { useWorkspace } from "./hooks/useWorkspace";
 import type { TaskRepository } from "./storage/TaskRepository";
@@ -69,11 +72,6 @@ function App({ repository }: AppProps): ReactElement {
   );
 
   const listGroups = useMemo(() => selectListTaskGroups(tasks, activeList), [activeList, tasks]);
-
-  const activeListTasks = useMemo(
-    () => listGroups.activeItems.flatMap((item) => [item.task, ...item.subtasks]),
-    [listGroups],
-  );
 
   const handleSelectView = (view: ActiveView) => {
     setSelectedView(view);
@@ -188,6 +186,53 @@ function App({ repository }: AppProps): ReactElement {
     });
   };
 
+  const handleSetSortMode = (sortMode: SortMode) => {
+    dispatch({
+      type: "SET_LIST_SORT_MODE",
+      listId: activeList.id,
+      sortMode,
+      now: Date.now(),
+    });
+  };
+
+  const handleAddSubtask = (parentId: string, title: string) => {
+    dispatch({
+      type: "ADD_TASK",
+      id: createId(),
+      listId: activeList.id,
+      parentId,
+      title,
+      now: Date.now(),
+    });
+  };
+
+  const handleIndentTask = (taskId: string, targetParentId: string) => {
+    dispatch({
+      type: "INDENT_TASK",
+      taskId,
+      targetParentId,
+      now: Date.now(),
+    });
+  };
+
+  const handleOutdentTask = (taskId: string) => {
+    dispatch({
+      type: "OUTDENT_TASK",
+      taskId,
+      now: Date.now(),
+    });
+  };
+
+  const handleReorderTasks = (parentId: string | null, orderedTaskIds: readonly string[]) => {
+    dispatch({
+      type: "REORDER_TASKS",
+      listId: activeList.id,
+      parentId,
+      orderedTaskIds,
+      now: Date.now(),
+    });
+  };
+
   const handleUndo = useCallback(() => {
     setExpandedTaskId(null);
     dispatch({ type: "UNDO" });
@@ -265,19 +310,41 @@ function App({ repository }: AppProps): ReactElement {
     return (
       <>
         <div className="tasks-card-header">
-          <h2>{activeList.title}</h2>
-          <span className="tasks-card-subtitle">{listGroups.activeCount} active</span>
+          <div className="tasks-card-header-meta">
+            <h2>{activeList.title}</h2>
+            <span className="tasks-card-subtitle">{listGroups.activeCount} active</span>
+          </div>
+
+          <div className="sort-control">
+            <SortIcon />
+            <label htmlFor="list-sort-select">Sort by</label>
+            <select
+              id="list-sort-select"
+              aria-label="Sort tasks by"
+              value={activeList.sortMode}
+              onChange={(event) => {
+                const value = event.target.value;
+                if (isSortMode(value)) {
+                  handleSetSortMode(value);
+                }
+              }}
+            >
+              <option value="manual">My order</option>
+              <option value="dueDate">Date</option>
+              <option value="title">Title</option>
+            </select>
+          </div>
         </div>
 
         <AddTaskForm onAddTask={handleAddTask} />
 
-        {activeListTasks.length === 0 && listGroups.completedCount === 0 ? (
+        {listGroups.activeItems.length === 0 && listGroups.completedCount === 0 ? (
           <p className="empty-state">No tasks yet. Add one!</p>
-        ) : activeListTasks.length === 0 ? (
+        ) : listGroups.activeItems.length === 0 ? (
           <p className="empty-state">All tasks completed!</p>
         ) : (
-          <TaskList
-            tasks={activeListTasks}
+          <TaskTreeList
+            items={listGroups.activeItems}
             lists={lists}
             expandedTaskId={expandedTaskId}
             onToggleExpand={handleToggleExpand}
@@ -286,6 +353,10 @@ function App({ repository }: AppProps): ReactElement {
             onUpdateTask={handleUpdateTask}
             onMoveTaskToList={handleMoveTaskToList}
             onDeleteTask={handleDeleteTask}
+            onAddSubtask={handleAddSubtask}
+            onIndentTask={handleIndentTask}
+            onOutdentTask={handleOutdentTask}
+            onReorderTasks={handleReorderTasks}
           />
         )}
 

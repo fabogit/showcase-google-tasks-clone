@@ -150,4 +150,51 @@ describe("App Google Tasks core workflows", () => {
     await user.selectOptions(screen.getByLabelText("Theme"), "dark");
     expect(document.documentElement).toHaveClass("dark");
   });
+
+  it("manages 1-level subtasks, indent/outdent, parent completion cascade, and list sort modes", async () => {
+    const user = userEvent.setup();
+    const repository = new LocalStorageTaskRepository();
+    render(<App repository={repository} />);
+
+    await screen.findByText("No tasks yet. Add one!");
+
+    // Add two root tasks (root tasks insert at top: Zebra then Alpha)
+    await user.type(screen.getByLabelText("New task text"), "Zebra");
+    await user.click(screen.getByRole("button", { name: "Add Task" }));
+    await user.type(screen.getByLabelText("New task text"), "Alpha");
+    await user.click(screen.getByRole("button", { name: "Add Task" }));
+
+    // Add subtask to Alpha
+    await user.click(screen.getByRole("button", { name: 'Add subtask to "Alpha"' }));
+    await user.type(screen.getByLabelText("New subtask text"), "Sub step{Enter}");
+    const subtasksList = screen.getByRole("list", {
+      name: 'Subtasks for "Alpha"',
+    });
+    expect(within(subtasksList).getByText("Sub step")).toBeInTheDocument();
+
+    // Indent Zebra under Alpha
+    await user.click(screen.getByRole("button", { name: 'Make "Zebra" a subtask' }));
+    expect(within(subtasksList).getByText("Zebra")).toBeInTheDocument();
+
+    // Outdent Zebra back to root
+    await user.click(screen.getByRole("button", { name: 'Move "Zebra" to top level' }));
+    expect(within(subtasksList).queryByText("Zebra")).not.toBeInTheDocument();
+
+    // Sort by Title -> Alpha before Zebra
+    await user.selectOptions(screen.getByLabelText("Sort tasks by"), "title");
+    const rootItems = Array.from(
+      document.querySelectorAll("ul.task-tree-list > li > .task-item .task-text"),
+    ).map((el) => el.textContent);
+    expect(rootItems).toEqual(["Alpha", "Zebra"]);
+
+    // Completing parent Alpha also completes its subtask "Sub step", and Undo restores both
+    await user.click(screen.getByRole("checkbox", { name: 'Mark task "Alpha" as complete' }));
+    expect(screen.queryByText("Alpha")).not.toBeInTheDocument();
+    expect(screen.queryByText("Sub step")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Completed (2)" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByText("Alpha")).toBeInTheDocument();
+    expect(screen.getByText("Sub step")).toBeInTheDocument();
+  });
 });

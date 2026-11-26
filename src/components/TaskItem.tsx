@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactElement } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import {
   addCalendarDays,
   classifyDueDate,
@@ -8,7 +15,17 @@ import {
   type CalendarDate,
 } from "../domain/calendarDate";
 import type { TaskEntity, TaskListEntity } from "../domain/types";
-import { CalendarIcon, EditIcon, FolderMoveIcon, NotesIcon, StarIcon, TrashIcon } from "./Icons";
+import {
+  CalendarIcon,
+  EditIcon,
+  FolderMoveIcon,
+  IndentIcon,
+  NotesIcon,
+  OutdentIcon,
+  StarIcon,
+  SubtaskIcon,
+  TrashIcon,
+} from "./Icons";
 
 export interface TaskUpdatePatch {
   readonly title?: string;
@@ -21,6 +38,16 @@ interface TaskItemProps {
   readonly lists: readonly TaskListEntity[];
   readonly listTitle?: string;
   readonly isExpanded: boolean;
+  readonly as?: "li" | "div";
+  readonly isSubtask?: boolean;
+  readonly dragHandle?: ReactNode;
+  readonly canAddSubtask?: boolean;
+  readonly onStartAddSubtask?: (taskId: string) => void;
+  readonly canIndent?: boolean;
+  readonly onIndent?: () => void;
+  readonly canOutdent?: boolean;
+  readonly onOutdent?: () => void;
+  readonly showSubtaskBadge?: boolean;
   readonly onToggleExpand: (taskId: string) => void;
   readonly onToggleComplete: (taskId: string) => void;
   readonly onToggleStarred: (taskId: string) => void;
@@ -35,6 +62,19 @@ interface TaskDetailsEditorProps {
   readonly onUpdateTask: (taskId: string, patch: TaskUpdatePatch) => void;
   readonly onMoveTaskToList: (taskId: string, targetListId: string) => void;
   readonly onClose: () => void;
+}
+
+function isEditableElement(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+  const tagName = target.tagName;
+  return (
+    tagName === "INPUT" ||
+    tagName === "TEXTAREA" ||
+    tagName === "SELECT" ||
+    target.isContentEditable
+  );
 }
 
 function TaskDetailsEditor({
@@ -195,6 +235,16 @@ export default function TaskItem({
   lists,
   listTitle,
   isExpanded,
+  as = "li",
+  isSubtask = false,
+  dragHandle,
+  canAddSubtask = false,
+  onStartAddSubtask,
+  canIndent = false,
+  onIndent,
+  canOutdent = false,
+  onOutdent,
+  showSubtaskBadge = false,
   onToggleExpand,
   onToggleComplete,
   onToggleStarred,
@@ -206,12 +256,52 @@ export default function TaskItem({
   const dueStatus = task.dueDate ? classifyDueDate(task.dueDate) : null;
   const dueLabel = task.dueDate ? formatDueDateLabel(task.dueDate) : null;
   const hasNotesPreview = !showEditor && task.notes.trim().length > 0;
+  const rowRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const rowElement = rowRef.current;
+    if (!rowElement || (!canIndent && !canOutdent)) {
+      return;
+    }
+
+    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (isEditableElement(event.target)) {
+        return;
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.key === "]") {
+        if (canIndent && onIndent) {
+          event.preventDefault();
+          onIndent();
+        }
+        return;
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.key === "[") {
+        if (canOutdent && onOutdent) {
+          event.preventDefault();
+          onOutdent();
+        }
+      }
+    };
+
+    rowElement.addEventListener("keydown", handleKeyDown);
+    return () => {
+      rowElement.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [canIndent, canOutdent, onIndent, onOutdent]);
+
+  const Container = as;
 
   return (
-    <li
-      className={`task-item ${task.isCompleted ? "completed" : ""} ${showEditor ? "editing" : ""}`}
+    <Container
+      className={`task-item ${isSubtask ? "subtask-item" : ""} ${
+        task.isCompleted ? "completed" : ""
+      } ${showEditor ? "editing" : ""}`}
     >
-      <div className="task-row">
+      <div ref={rowRef} className="task-row">
+        {dragHandle}
+
         <input
           type="checkbox"
           checked={task.isCompleted}
@@ -233,7 +323,7 @@ export default function TaskItem({
 
           {hasNotesPreview ? <p className="task-notes-preview">{task.notes}</p> : null}
 
-          {dueLabel || listTitle ? (
+          {dueLabel || listTitle || showSubtaskBadge ? (
             <div className="task-chips">
               {dueLabel && dueStatus ? (
                 <span className={`due-chip due-chip--${dueStatus}`}>
@@ -241,6 +331,7 @@ export default function TaskItem({
                   <span>{dueLabel}</span>
                 </span>
               ) : null}
+              {showSubtaskBadge ? <span className="subtask-badge">Subtask</span> : null}
               {listTitle ? <span className="task-list-badge">{listTitle}</span> : null}
             </div>
           ) : null}
@@ -249,6 +340,42 @@ export default function TaskItem({
         <div className="task-actions">
           {!task.isCompleted ? (
             <>
+              {canAddSubtask && onStartAddSubtask ? (
+                <button
+                  type="button"
+                  onClick={() => onStartAddSubtask(task.id)}
+                  className="icon-button icon-button-sm"
+                  aria-label={`Add subtask to "${task.title}"`}
+                  title="Add a subtask"
+                >
+                  <SubtaskIcon />
+                </button>
+              ) : null}
+
+              {canIndent && onIndent ? (
+                <button
+                  type="button"
+                  onClick={onIndent}
+                  className="icon-button icon-button-sm"
+                  aria-label={`Make "${task.title}" a subtask`}
+                  title="Make subtask (Ctrl+])"
+                >
+                  <IndentIcon />
+                </button>
+              ) : null}
+
+              {canOutdent && onOutdent ? (
+                <button
+                  type="button"
+                  onClick={onOutdent}
+                  className="icon-button icon-button-sm"
+                  aria-label={`Move "${task.title}" to top level`}
+                  title="Move to top level (Ctrl+[)"
+                >
+                  <OutdentIcon />
+                </button>
+              ) : null}
+
               <button
                 type="button"
                 onClick={() => onToggleExpand(task.id)}
@@ -259,6 +386,7 @@ export default function TaskItem({
               >
                 <EditIcon />
               </button>
+
               <button
                 type="button"
                 onClick={() => onToggleStarred(task.id)}
@@ -298,6 +426,6 @@ export default function TaskItem({
           onClose={() => onToggleExpand(task.id)}
         />
       ) : null}
-    </li>
+    </Container>
   );
 }

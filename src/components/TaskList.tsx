@@ -35,6 +35,7 @@ export default function TaskList({
           task={task}
           lists={lists}
           listTitle={listTitleById?.get(task.listId)}
+          showSubtaskBadge={task.parentId !== null}
           isExpanded={expandedTaskId === task.id}
           onToggleExpand={onToggleExpand}
           onToggleComplete={onToggleComplete}
