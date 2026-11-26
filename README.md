@@ -1,19 +1,19 @@
 # showcase-google-tasks-clone
 
-> A Google Tasks clone engineered with React 19.3, TypeScript 7, Vite+ (`vp`), and a Material Design 3 interface, featuring a pure domain reducer, 1-level subtasks, due-date classification, accessible drag-and-drop reordering, and an asynchronous `TaskRepository` designed for seamless F3 expansion.
+> A Google Tasks clone engineered with React 19.3, TypeScript 7, Vite+ (`vp`), and a Material Design 3 interface, featuring a pure domain reducer, 1-level subtasks, timezone-safe due dates, accessible drag-and-drop reordering, and a pluggable asynchronous `TaskRepository` architecture.
 
-**Inception (First Commit):** `2025-04-08` • **Architecture Domain:** `Frontend State Management / Productivity Clone`
+**Inception (First Commit):** `2025-04-08` • **Batch / Horizon:** `2025–2026` • **Architecture Domain:** `Frontend State Management / Productivity Clone`
 
 ---
 
-## Architecture & Overview
+## 📌 Architecture & Overview
 
-`showcase-google-tasks-clone` is a client-side Single Page Application (SPA) reproducing the core Google Tasks workflow without UI component library bloat. Domain logic, runtime schema validation, and persistence contracts are strictly decoupled from React components so the storage backend can be swapped (e.g., from `localStorage` to IndexedDB + `BroadcastChannel` + JSON Import/Export) without rewriting state transitions or UI components.
+`showcase-google-tasks-clone` is a client-side Single Page Application (SPA) reproducing the core Google Tasks workflow without heavy UI component frameworks. Domain logic, runtime schema validation, and persistence contracts are strictly decoupled from React components so the storage backend can be swapped (e.g., from `localStorage` to IndexedDB + `BroadcastChannel` + JSON Import/Export) without rewriting state transitions or UI code.
 
 - **Key Patterns:**
-  - **Pure Domain & Reducer Core (`src/domain/`):** `workspaceReducer` enforces list/task invariants (last-list deletion guard, 1-level subtask depth, cascading completion/reopen rules, atomic parent+subtask deletion/list moves, single-step undo snapshots).
-  - **Runtime Schema Validation & Automatic Migration (`src/domain/schema.ts`):** Untrusted storage payloads are validated with explicit type guards (zero unsafe `as` casts) and legacy v1 `gugleTascTasks` arrays are automatically migrated on load.
-  - **Asynchronous F3-Ready Persistence (`src/storage/TaskRepository.ts`):** `useWorkspace` coordinates hydration, typed `StorageError` recovery banners, and cross-tab `storage` synchronization behind an async `TaskRepository` interface.
+  - **Pure Domain & Reducer Core (`src/domain/`):** `workspaceReducer` enforces list/task invariants (last-list deletion guard, 1-level subtask depth, cascading completion/reopen rules, atomic parent+subtask deletion and cross-list moves, single-step undo snapshots).
+  - **Runtime Schema Validation & Automatic Migration (`src/domain/schema.ts`):** Untrusted storage payloads are validated with explicit type guards (zero unsafe `as` casts), and legacy v1 `gugleTascTasks` arrays are automatically migrated on load.
+  - **Pluggable Async Persistence (`src/storage/TaskRepository.ts`):** `useWorkspace` coordinates async hydration, typed `StorageError` recovery banners, and cross-tab `storage` synchronization behind an IndexedDB-ready `TaskRepository` interface.
   - **Timezone-Safe Local Calendar Dates (`src/domain/calendarDate.ts`):** Due dates use local `YYYY-MM-DD` strings (`CalendarDate`) rather than UTC timestamps to prevent timezone off-by-one shifts.
   - **Material Design 3 & Anti-FOUC Theming:** Native CSS custom properties in `src/styles/tokens.css` paired with an inline blocking `<head>` script in `index.html` and a hardened `useTheme` hook (`light` | `dark` | `system`).
 
@@ -57,7 +57,7 @@
 
 ---
 
-## Tech Stack
+## 🛠 Tech Stack
 
 - **Runtime & UI:** [React](https://react.dev/) (`^19.3.1`), [React DOM](https://react.dev/) (`^19.3.1`)
 - **Drag & Drop:** [`@dnd-kit/core`](https://dndkit.com/) (`^6.3.1`), `@dnd-kit/sortable` (`^10.0.0`), `@dnd-kit/utilities` (`^3.2.2`)
@@ -69,16 +69,25 @@
 
 ---
 
-## Features & Interfaces
+## ✨ Features & Interfaces
 
 - **Multiple Task Lists:** Create, rename inline, switch, and delete lists (enforcing that at least one list always remains), with active task counter badges.
 - **Task Details & Due Dates:** Expandable inline editor (`TaskDetailsEditor`) for title, notes/details preview, `Today` / `Tomorrow` / date-picker / `Clear` controls with overdue/today/tomorrow visual chips, and moving tasks across lists.
 - **Starred View:** Toggle star status on any active task, view aggregated active starred tasks with list-origin badges, and create starred tasks directly from the `Starred` view.
-- **1-Level Subtasks & Hierarchy Controls:** Inline subtask creation under root tasks, indent (`Ctrl+]` / `Cmd+]`) and outdent (`Ctrl+[` / `Cmd+[`) actions with depth guards, and cascading completion/reopening between parent and subtasks.
+- **1-Level Subtasks & Hierarchy Controls:** Inline subtask creation under root tasks, indent and outdent actions with depth guards, and cascading completion/reopening between parent and subtasks.
 - **Sorting & Accessible Reordering:** Per-list sorting (`My order`, `Date`, `Title`) plus pointer and keyboard drag-and-drop reordering (`@dnd-kit`) for both root tasks and subtasks.
-- **Global Search:** Live case-insensitive search across all lists matching task titles and notes, preserving subtask/list context badges.
+- **Global Search:** Live case-insensitive search across all lists matching task titles and notes, preserving subtask and list context badges.
 - **Completed Section & Undo Snackbar:** Collapsible `Completed (N)` section with single-click restore and `Delete all completed`, paired with an accessible `<output>` Undo Snackbar for deletions, completions, list removals, and bulk clears.
-- **F3-Ready Architecture:** The async `TaskRepository` interface and `parseWorkspaceSnapshotV2` runtime parser are already prepared for drop-in addition of an `IndexedDbTaskRepository`, `BroadcastChannel` sync, and validated JSON Import/Export.
+- **Extensibility Roadmap:** The async `TaskRepository` interface and `parseWorkspaceSnapshotV2` runtime validator allow drop-in future support for an `IndexedDbTaskRepository`, `BroadcastChannel` multi-tab sync, validated JSON Import/Export, and optional offline PWA caching.
+
+### ⌨️ Keyboard Shortcuts
+
+| Context                                     | Shortcut                            | Action                                                  |
+| ------------------------------------------- | ----------------------------------- | ------------------------------------------------------- |
+| Active root task row                        | `Ctrl + ]` / `Cmd + ]`              | Indent task into a subtask under the previous root task |
+| Active subtask row                          | `Ctrl + [` / `Cmd + [`              | Promote subtask back to top-level task                  |
+| Inline editors (lists / details / subtasks) | `Enter` / `Escape`                  | Commit changes / cancel editing                         |
+| Reorder drag handle                         | `Space` then `↑` / `↓` then `Space` | Pick up, move, and drop task or subtask                 |
 
 ### Data Models & Storage Schema
 
@@ -129,7 +138,7 @@ export interface WorkspaceSnapshotV2 {
 
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
@@ -157,21 +166,24 @@ pnpm dev
 # Format, lint (Oxlint type-aware + jsx-a11y), and typecheck via Vite+
 pnpm check
 
+# Run formatting or linting individually
+pnpm fmt
+pnpm lint
+
 # Run standalone TypeScript 7 project check
 pnpm typecheck
 
 # Run unit and integration test suites (Vitest)
 pnpm test
+pnpm test:watch
 
-# Build production bundle to dist/
+# Build production bundle to dist/ and preview locally
 pnpm build
-
-# Preview production bundle locally
 pnpm preview
 ```
 
 ---
 
-## License & Author
+## 📄 License & Author
 
 Developed by [@fabogit](https://github.com/fabogit).

@@ -24,6 +24,8 @@ export default function AddTaskForm({
   return (
     <form onSubmit={handleSubmit} className="add-task-form" aria-label="Add new task form">
       <input
+        id="new-task-input"
+        name="newTaskTitle"
         type="text"
         placeholder={placeholder}
         value={title}

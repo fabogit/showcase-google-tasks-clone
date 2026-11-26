@@ -43,6 +43,8 @@ export function Header({
         >
           <SearchIcon className="header-search-icon" />
           <input
+            id="task-search-input"
+            name="search"
             type="search"
             className="header-search-input"
             value={searchQuery}
