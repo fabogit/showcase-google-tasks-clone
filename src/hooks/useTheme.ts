@@ -23,10 +23,7 @@ const THEME_STORAGE_KEY = "themePreference";
  */
 const getSystemTheme = (): AppliedTheme => {
   // Check if window.matchMedia is supported and if dark mode is preferred
-  if (
-    window.matchMedia &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches
-  ) {
+  if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
     return "dark";
   }
   return "light";
@@ -41,24 +38,15 @@ const getSystemTheme = (): AppliedTheme => {
  *  - The current theme preference state ('light', 'dark', or 'system').
  *  - A function to update the theme preference.
  */
-export const useTheme = (): [
-  ThemePreference,
-  (theme: ThemePreference) => void
-] => {
-  const [themePreference, setThemePreference] = useState<ThemePreference>(
-    () => {
-      const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-      // Ensure the stored value is a valid ThemePreference, otherwise default to 'system'
-      if (
-        storedTheme === "light" ||
-        storedTheme === "dark" ||
-        storedTheme === "system"
-      ) {
-        return storedTheme;
-      }
-      return "system";
+export const useTheme = (): [ThemePreference, (theme: ThemePreference) => void] => {
+  const [themePreference, setThemePreference] = useState<ThemePreference>(() => {
+    const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    // Ensure the stored value is a valid ThemePreference, otherwise default to 'system'
+    if (storedTheme === "light" || storedTheme === "dark" || storedTheme === "system") {
+      return storedTheme;
     }
-  );
+    return "system";
+  });
 
   /**
    * Applies the given theme ('light' or 'dark') to the document's root element
@@ -110,7 +98,7 @@ export const useTheme = (): [
       };
     },
     // Dependencies for the effect
-    [themePreference, applyTheme]
+    [themePreference, applyTheme],
   );
 
   return [themePreference, setThemePreference];

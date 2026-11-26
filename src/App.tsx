@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { v4 as uuidv4 } from "uuid";
+import { createId } from "./utils/id";
 import { Task } from "./types/task";
 import AddTaskForm from "./components/AddTaskForm";
 import TaskList from "./components/TaskList";
@@ -62,7 +62,7 @@ function App() {
       }
     },
     // Dependency array: This effect runs only when 'tasks' changes
-    [tasks]
+    [tasks],
   );
 
   // --- Task Handler Functions ---
@@ -76,7 +76,7 @@ function App() {
     const trimmedText = newTaskText.trim();
     if (!trimmedText) return;
     const newTask: Task = {
-      id: uuidv4(),
+      id: createId(),
       text: trimmedText,
       isCompleted: false,
     };
@@ -92,8 +92,8 @@ function App() {
   const handleToggleComplete = (id: string) => {
     setTasks((prevTasks) =>
       prevTasks.map((task) =>
-        task.id === id ? { ...task, isCompleted: !task.isCompleted } : task
-      )
+        task.id === id ? { ...task, isCompleted: !task.isCompleted } : task,
+      ),
     );
   };
 
@@ -107,16 +107,12 @@ function App() {
   const handleEditTask = (id: string, newText: string) => {
     const trimmedText = newText.trim();
     if (!trimmedText) {
-      console.warn(
-        "Attempted to save empty task text from App component. Ignoring."
-      );
+      console.warn("Attempted to save empty task text from App component. Ignoring.");
       return; // Do not save empty text at the App level either
     }
 
     setTasks((prevTasks) =>
-      prevTasks.map((task) =>
-        task.id === id ? { ...task, text: trimmedText } : task
-      )
+      prevTasks.map((task) => (task.id === id ? { ...task, text: trimmedText } : task)),
     );
     // Explanation: Similar to toggleComplete, we map over the tasks.
     // If the task ID matches, we create a new task object using spread (...)
@@ -144,9 +140,7 @@ function App() {
         <select
           id="theme-select"
           value={themePreference}
-          onChange={(e) =>
-            setThemePreference(e.target.value as "light" | "dark" | "system")
-          }
+          onChange={(e) => setThemePreference(e.target.value as "light" | "dark" | "system")}
         >
           <option value="light">Light</option>
           <option value="dark">Dark</option>

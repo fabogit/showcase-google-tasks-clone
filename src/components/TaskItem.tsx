@@ -95,18 +95,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   return (
     <li
-      className={`task-item ${task.isCompleted ? "completed" : ""} ${
-        isEditing ? "editing" : ""
-      }`}
+      className={`task-item ${task.isCompleted ? "completed" : ""} ${isEditing ? "editing" : ""}`}
     >
       <input
         type="checkbox"
         checked={task.isCompleted}
         onChange={() => onToggleComplete(task.id)}
         className="task-checkbox"
-        aria-label={`Mark task "${task.text}" as ${
-          task.isCompleted ? "incomplete" : "complete"
-        }`}
+        aria-label={`Mark task "${task.text}" as ${task.isCompleted ? "incomplete" : "complete"}`}
         // Keep checkbox disabled while editing
         disabled={isEditing}
       />
@@ -126,11 +122,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           />
           {/* Explicit Save/Cancel buttons */}
           <div className="edit-actions">
-            <button
-              onClick={handleSave}
-              className="save-button"
-              aria-label="Save task changes"
-            >
+            <button onClick={handleSave} className="save-button" aria-label="Save task changes">
               Save
             </button>
             <button

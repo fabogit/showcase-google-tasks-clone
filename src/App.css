@@ -6,7 +6,9 @@
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--border-color);
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 /* Theme Selector Styles */
@@ -35,7 +37,10 @@
   /* Align select box with the label */
   vertical-align: middle;
   cursor: pointer;
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
 
 /* Optional: Style focus state for accessibility */
@@ -66,7 +71,10 @@ h2 {
   color: var(--text-color);
   border-radius: 4px 0 0 4px;
   font-size: 1rem;
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .add-task-input::placeholder {
@@ -86,7 +94,9 @@ h2 {
   font-size: 1rem;
   /* Slightly bolder */
   font-weight: 500;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .add-task-button:hover {

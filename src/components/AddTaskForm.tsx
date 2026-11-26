@@ -45,11 +45,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="add-task-form"
-      aria-label="Add new task form"
-    >
+    <form onSubmit={handleSubmit} className="add-task-form" aria-label="Add new task form">
       <input
         type="text"
         placeholder="Add a new task..."
