@@ -1,81 +1,47 @@
-// src/components/TaskItem.tsx
-import React, { useState, useRef, useEffect } from "react";
-import { Task } from "../types/task";
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactElement } from "react";
+import type { TaskEntity } from "../domain/types";
 
-/**
- * @interface TaskItemProps
- * @description Props for the TaskItem component.
- */
 interface TaskItemProps {
-  task: Task;
-  onToggleComplete: (id: string) => void;
-  onDeleteTask: (id: string) => void;
-  /**
-   * @property {(id: string, newText: string) => void} onEditTask - Callback function invoked when the task text should be updated.
-   * @param {string} id - The ID of the task to edit.
-   * @param {string} newText - The new text for the task.
-   */
-  onEditTask: (id: string, newText: string) => void;
+  readonly task: TaskEntity;
+  readonly listTitle?: string;
+  readonly onToggleComplete: (id: string) => void;
+  readonly onDeleteTask: (id: string) => void;
+  readonly onEditTask: (id: string, newTitle: string) => void;
 }
 
-/**
- * @component TaskItem
- * @description Displays a single task item with controls for completion, deletion, and editing.
- * @param {TaskItemProps} props - The props for the component.
- * @returns {React.ReactElement} The rendered list item element.
- */
-const TaskItem: React.FC<TaskItemProps> = ({
+export default function TaskItem({
   task,
+  listTitle,
   onToggleComplete,
   onDeleteTask,
   onEditTask,
-}) => {
+}: TaskItemProps): ReactElement {
   const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(task.text);
+  const [editTitle, setEditTitle] = useState(task.title);
   const editInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (isEditing && editInputRef.current) {
-      editInputRef.current.focus();
-      // Optional: Select text on focus
-      // editInputRef.current.select();
+    if (isEditing) {
+      editInputRef.current?.focus();
     }
   }, [isEditing]);
 
-  /**
-   * Handles saving the edited task text.
-   * Trims the text and calls onEditTask if the text is valid and changed.
-   * Exits edit mode.
-   */
   const handleSave = () => {
-    const trimmedText = editText.trim();
-    // Save only if text is not empty AND text has actually changed
-    if (trimmedText && trimmedText !== task.text) {
-      onEditTask(task.id, trimmedText);
-    } else if (!trimmedText) {
-      // If user deletes all text, revert.
-      console.warn("Task text cannot be empty. Reverting changes.");
-      setEditText(task.text);
+    const trimmedTitle = editTitle.trim();
+    if (trimmedTitle && trimmedTitle !== task.title) {
+      onEditTask(task.id, trimmedTitle);
+    } else if (!trimmedTitle) {
+      setEditTitle(task.title);
     }
-    // Exit editing mode regardless of save success if text was valid or unchanged
     setIsEditing(false);
   };
 
-  /**
-   * Handles canceling the edit operation.
-   * Resets the editText state and exits edit mode.
-   */
   const handleCancel = () => {
-    // Reset text to original
-    setEditText(task.text);
+    setEditTitle(task.title);
     setIsEditing(false);
   };
 
-  /**
-   * Handles key down events on the input field (Enter to save, Escape to cancel).
-   * @param {React.KeyboardEvent<HTMLInputElement>} event - The keyboard event.
-   */
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
       handleSave();
     } else if (event.key === "Escape") {
@@ -83,13 +49,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
-  /**
-   * Enters edit mode. Sets the editText initial value.
-   * Only enters edit mode if the task is not completed.
-   */
   const handleEditClick = () => {
-    if (task.isCompleted) return;
-    setEditText(task.text);
+    if (task.isCompleted) {
+      return;
+    }
+    setEditTitle(task.title);
     setIsEditing(true);
   };
 
@@ -102,30 +66,32 @@ const TaskItem: React.FC<TaskItemProps> = ({
         checked={task.isCompleted}
         onChange={() => onToggleComplete(task.id)}
         className="task-checkbox"
-        aria-label={`Mark task "${task.text}" as ${task.isCompleted ? "incomplete" : "complete"}`}
-        // Keep checkbox disabled while editing
+        aria-label={`Mark task "${task.title}" as ${task.isCompleted ? "incomplete" : "complete"}`}
         disabled={isEditing}
       />
 
       {isEditing ? (
-        // --- Edit Mode UI ---
         <div className="edit-container">
           <input
             ref={editInputRef}
             type="text"
-            value={editText}
-            onChange={(e) => setEditText(e.target.value)}
+            value={editTitle}
+            onChange={(event) => setEditTitle(event.target.value)}
             onKeyDown={handleKeyDown}
-            // Removed onBlur={handleSave}
             className="edit-input"
-            aria-label={`Edit task text for "${task.text}"`}
+            aria-label={`Edit task text for "${task.title}"`}
           />
-          {/* Explicit Save/Cancel buttons */}
           <div className="edit-actions">
-            <button onClick={handleSave} className="save-button" aria-label="Save task changes">
+            <button
+              type="button"
+              onClick={handleSave}
+              className="save-button"
+              aria-label="Save task changes"
+            >
               Save
             </button>
             <button
+              type="button"
               onClick={handleCancel}
               className="cancel-button"
               aria-label="Cancel task editing"
@@ -135,30 +101,32 @@ const TaskItem: React.FC<TaskItemProps> = ({
           </div>
         </div>
       ) : (
-        // --- View Mode UI ---
         <>
-          {/* Add conditional disabling for double-click as well if desired */}
-          <span
-            className={`task-text ${task.isCompleted ? "no-edit" : ""}`} // Add class if completed
-            onDoubleClick={!task.isCompleted ? handleEditClick : undefined} // Disable dblclick if completed
-            title={task.isCompleted ? task.text : "Double-click to edit"} // Change title if completed
-          >
-            {task.text}
-          </span>
+          <div className="task-content">
+            <span
+              className={`task-text ${task.isCompleted ? "no-edit" : ""}`}
+              onDoubleClick={!task.isCompleted ? handleEditClick : undefined}
+              title={task.isCompleted ? task.title : "Double-click to edit"}
+            >
+              {task.title}
+            </span>
+            {listTitle ? <span className="task-list-badge">{listTitle}</span> : null}
+          </div>
           <div className="task-actions">
             <button
+              type="button"
               onClick={handleEditClick}
               className="edit-task-button"
-              aria-label={`Edit task "${task.text}"`}
-              // Explicitly disable button if completed
+              aria-label={`Edit task "${task.title}"`}
               disabled={task.isCompleted}
             >
               Edit
             </button>
             <button
+              type="button"
               onClick={() => onDeleteTask(task.id)}
               className="delete-task-button"
-              aria-label={`Delete task "${task.text}"`}
+              aria-label={`Delete task "${task.title}"`}
             >
               Delete
             </button>
@@ -167,6 +135,4 @@ const TaskItem: React.FC<TaskItemProps> = ({
       )}
     </li>
   );
-};
-
-export default TaskItem;
+}

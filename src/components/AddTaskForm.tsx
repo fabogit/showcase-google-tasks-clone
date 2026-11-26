@@ -1,56 +1,33 @@
-import React from "react";
+import { useState, type FormEvent, type ReactElement } from "react";
 
-/**
- * @interface AddTaskFormProps
- * @description Props for the AddTaskForm component.
- */
 interface AddTaskFormProps {
-  /**
-   * @property {string} newTaskText - The current value of the task input field.
-   */
-  newTaskText: string;
-  /**
-   * @property {(text: string) => void} onNewTaskTextChange - Callback function triggered when the input value changes.
-   * @param {string} text - The new text value from the input.
-   */
-  onNewTaskTextChange: (text: string) => void;
-  /**
-   * @property {() => void} onAddTask - Callback function triggered when the form is submitted to add a new task.
-   */
-  onAddTask: () => void;
+  readonly onAddTask: (title: string) => void;
+  readonly placeholder?: string;
 }
 
-/**
- * @component AddTaskForm
- * @description A form component for adding new tasks. Includes an input field and a submit button.
- * @param {AddTaskFormProps} props - The props for the component.
- * @returns {React.ReactElement} The rendered form element.
- */
-const AddTaskForm: React.FC<AddTaskFormProps> = ({
-  newTaskText,
-  onNewTaskTextChange,
+export default function AddTaskForm({
   onAddTask,
-}) => {
-  /**
-   * Handles the form submission event.
-   * Prevents default page reload and calls the onAddTask prop if the input is not empty.
-   * @param {React.FormEvent} event - The form submission event object.
-   */
-  const handleSubmit = (event: React.FormEvent) => {
+  placeholder = "Add a task...",
+}: AddTaskFormProps): ReactElement {
+  const [title, setTitle] = useState("");
+
+  const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
-    // Only add task if the trimmed text is not empty
-    if (newTaskText.trim()) {
-      onAddTask();
+    const trimmed = title.trim();
+    if (!trimmed) {
+      return;
     }
+    onAddTask(trimmed);
+    setTitle("");
   };
 
   return (
     <form onSubmit={handleSubmit} className="add-task-form" aria-label="Add new task form">
       <input
         type="text"
-        placeholder="Add a new task..."
-        value={newTaskText}
-        onChange={(e) => onNewTaskTextChange(e.target.value)}
+        placeholder={placeholder}
+        value={title}
+        onChange={(event) => setTitle(event.target.value)}
         className="add-task-input"
         aria-label="New task text"
       />
@@ -59,6 +36,4 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({
       </button>
     </form>
   );
-};
-
-export default AddTaskForm;
+}

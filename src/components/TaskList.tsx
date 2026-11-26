@@ -1,55 +1,29 @@
-import React from "react";
-import { Task } from "../types/task";
+import type { ReactElement } from "react";
+import type { TaskEntity } from "../domain/types";
 import TaskItem from "./TaskItem";
 
-/**
- * @interface TaskListProps
- * @description Props for the TaskList component.
- */
 interface TaskListProps {
-  /**
-   * @property tasks - An array of task objects to display.
-   */
-  tasks: Task[];
-  /**
-   * @property onToggleComplete - Callback function passed down to TaskItem for toggling completion.
-   * @param id - The ID of the task to toggle.
-   */
-  onToggleComplete: (id: string) => void;
-  /**
-   * @property onDeleteTask - Callback function passed down to TaskItem for deleting a task.
-   * @param id - The ID of the task to delete.
-   */
-  onDeleteTask: (id: string) => void;
-  /**
-   *
-   * @property onEditTask - Callback function passed down to TaskItem for editing a task.
-   * @param id  - The ID of the task to edit.
-   * @param newText - The updated task text
-   */
-  onEditTask: (id: string, newText: string) => void;
+  readonly tasks: readonly TaskEntity[];
+  readonly listTitleById?: ReadonlyMap<string, string>;
+  readonly onToggleComplete: (id: string) => void;
+  readonly onDeleteTask: (id: string) => void;
+  readonly onEditTask: (id: string, newTitle: string) => void;
 }
 
-/**
- * @component TaskList
- * @description Renders a list of TaskItem components based on the provided tasks array.
- * @param {TaskListProps} props - The props for the component.
- * @returns {React.ReactElement} The rendered unordered list element.
- */
-const TaskList: React.FC<TaskListProps> = ({
+export default function TaskList({
   tasks,
+  listTitleById,
   onToggleComplete,
   onDeleteTask,
   onEditTask,
-}) => {
+}: TaskListProps): ReactElement {
   return (
     <ul className="task-list">
       {tasks.map((task) => (
         <TaskItem
-          // React key prop
           key={task.id}
           task={task}
-          // Pass down the handlers
+          listTitle={listTitleById?.get(task.listId)}
           onToggleComplete={onToggleComplete}
           onDeleteTask={onDeleteTask}
           onEditTask={onEditTask}
@@ -57,6 +31,4 @@ const TaskList: React.FC<TaskListProps> = ({
       ))}
     </ul>
   );
-};
-
-export default TaskList;
+}

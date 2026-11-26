@@ -1,0 +1,97 @@
+/* Material Design 3 Color, Elevation, Radius, and Typography Tokens */
+:root {
+  color-scheme: light dark;
+
+  --md-sys-color-background: #f0f4f9;
+  --md-sys-color-surface: #ffffff;
+  --md-sys-color-surface-container-lowest: #ffffff;
+  --md-sys-color-surface-container-low: #f8fafd;
+  --md-sys-color-surface-container: #edf2fa;
+  --md-sys-color-surface-container-high: #e1e8f5;
+
+  --md-sys-color-primary: #0b57d0;
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #d3e3fd;
+  --md-sys-color-on-primary-container: #041e49;
+
+  --md-sys-color-on-surface: #1f1f1f;
+  --md-sys-color-on-surface-variant: #444746;
+  --md-sys-color-outline: #747775;
+  --md-sys-color-outline-variant: #dadce0;
+
+  --md-sys-color-error: #b3261e;
+  --md-sys-color-error-container: #fce8e6;
+  --md-sys-color-on-error-container: #410e0b;
+
+  --md-sys-color-warning-container: #fef7e0;
+  --md-sys-color-on-warning-container: #5c4300;
+  --md-sys-color-warning-border: #f2d06b;
+
+  --md-sys-color-hover: rgba(31, 31, 31, 0.06);
+  --md-sys-color-scrim: rgba(0, 0, 0, 0.36);
+
+  --md-sys-color-snackbar-bg: #303030;
+  --md-sys-color-snackbar-text: #f2f2f2;
+  --md-sys-color-snackbar-action: #a8c7fa;
+
+  --md-sys-color-due-overdue: #b3261e;
+  --md-sys-color-due-today: #0b57d0;
+  --md-sys-color-due-tomorrow: #146c2e;
+
+  --md-elevation-1: 0 1px 2px rgba(0, 0, 0, 0.08), 0 1px 3px 1px rgba(0, 0, 0, 0.05);
+  --md-elevation-2: 0 2px 6px 2px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.12);
+  --md-elevation-3: 0 4px 12px rgba(0, 0, 0, 0.14);
+
+  --md-radius-sm: 8px;
+  --md-radius-md: 12px;
+  --md-radius-lg: 16px;
+  --md-radius-xl: 24px;
+  --md-radius-pill: 9999px;
+
+  --md-font-sans:
+    "Google Sans", "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --md-transition-fast: 150ms cubic-bezier(0.2, 0, 0, 1);
+  --md-transition-standard: 220ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+html.dark {
+  --md-sys-color-background: #131314;
+  --md-sys-color-surface: #1e1f20;
+  --md-sys-color-surface-container-lowest: #18191a;
+  --md-sys-color-surface-container-low: #1e1f20;
+  --md-sys-color-surface-container: #282a2c;
+  --md-sys-color-surface-container-high: #333537;
+
+  --md-sys-color-primary: #a8c7fa;
+  --md-sys-color-on-primary: #062e6f;
+  --md-sys-color-primary-container: #0842a0;
+  --md-sys-color-on-primary-container: #d3e3fd;
+
+  --md-sys-color-on-surface: #e3e3e3;
+  --md-sys-color-on-surface-variant: #c4c7c5;
+  --md-sys-color-outline: #8e918f;
+  --md-sys-color-outline-variant: #444746;
+
+  --md-sys-color-error: #f2b8b5;
+  --md-sys-color-error-container: #601410;
+  --md-sys-color-on-error-container: #f9dedc;
+
+  --md-sys-color-warning-container: #3f3108;
+  --md-sys-color-on-warning-container: #fde293;
+  --md-sys-color-warning-border: #6c540e;
+
+  --md-sys-color-hover: rgba(227, 227, 227, 0.08);
+  --md-sys-color-scrim: rgba(0, 0, 0, 0.56);
+
+  --md-sys-color-snackbar-bg: #e3e3e3;
+  --md-sys-color-snackbar-text: #1f1f1f;
+  --md-sys-color-snackbar-action: #0b57d0;
+
+  --md-sys-color-due-overdue: #f2b8b5;
+  --md-sys-color-due-today: #a8c7fa;
+  --md-sys-color-due-tomorrow: #6dd58c;
+
+  --md-elevation-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 3px 1px rgba(0, 0, 0, 0.25);
+  --md-elevation-2: 0 2px 6px 2px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --md-elevation-3: 0 6px 16px rgba(0, 0, 0, 0.48);
+}

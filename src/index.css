@@ -1,75 +1,51 @@
-/* Define color variables for light and dark themes */
-:root {
-  /* Indicate supported color schemes */
-  color-scheme: light dark;
+@import "./styles/tokens.css";
 
-  /* Light Theme (Default) */
-
-  /* Page background */
-  --bg-color: #f8f9fa;
-  /* Primary text */
-  --text-color: #212529;
-  /* Secondary text (e.g., placeholders) */
-  --text-muted-color: #6c757d;
-  /* Card/Container background */
-  --card-bg-color: #ffffff;
-  /* Input background */
-  --input-bg-color: #ffffff;
-  /* Input border */
-  --input-border-color: #ced4da;
-  /* Primary button bg */
-  --button-primary-bg: #007bff;
-  /* Primary button text */
-  --button-primary-text: #ffffff;
-  /* Danger button bg */
-  --button-danger-bg: #dc3545;
-  /* Danger button text */
-  --button-danger-text: #ffffff;
-  /* General border/divider */
-  --border-color: #dee2e6;
-  /* Subtle hover background */
-  --hover-bg-color: #f1f3f5;
-  /* Completed task text */
-  --completed-text-color: #6c757d;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
-html.dark {
-  /* Dark Theme */
-  --bg-color: #121212;
-  --text-color: #e0e0e0;
-  --text-muted-color: #adb5bd;
-  --card-bg-color: #1e1e1e;
-  --input-bg-color: #2b2b2b;
-  --input-border-color: #495057;
-  --button-primary-bg: #0d6efd;
-  --button-primary-text: #ffffff;
-  --button-danger-bg: #dc3545;
-  --button-danger-text: #ffffff;
-  --border-color: #343a40;
-  --hover-bg-color: #2c2c2c;
-  --completed-text-color: #868e96;
+html,
+body,
+#root {
+  height: 100%;
 }
 
-/* Apply base styles using variables */
 body {
   margin: 0;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell",
-    "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+  font-family: var(--md-font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--md-sys-color-on-surface);
+  background-color: var(--md-sys-color-background);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--bg-color);
-  color: var(--text-color);
-  /* Smooth transition */
   transition:
-    background-color 0.2s ease,
-    color 0.2s ease;
+    background-color var(--md-transition-standard),
+    color var(--md-transition-standard);
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  color: inherit;
 }
 
-* {
-  box-sizing: border-box;
+:focus-visible {
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
