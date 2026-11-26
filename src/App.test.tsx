@@ -1,8 +1,13 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vite-plus/test";
 import App from "./App";
-import { LocalStorageTaskRepository } from "./storage/LocalStorageTaskRepository";
+import { WORKSPACE_SCHEMA_VERSION } from "./domain/types";
+import {
+  LEGACY_V1_STORAGE_KEY,
+  LocalStorageTaskRepository,
+  WORKSPACE_V2_STORAGE_KEY,
+} from "./storage/LocalStorageTaskRepository";
 
 describe("App Google Tasks core workflows", () => {
   it("supports adding, expanding details, updating notes/due dates, and deleting with undo", async () => {
@@ -196,5 +201,88 @@ describe("App Google Tasks core workflows", () => {
     await user.click(screen.getByRole("button", { name: "Undo" }));
     expect(screen.getByText("Alpha")).toBeInTheDocument();
     expect(screen.getByText("Sub step")).toBeInTheDocument();
+  });
+
+  it("automatically migrates legacy v1 tasks into v2 workspace on load", async () => {
+    localStorage.setItem(
+      LEGACY_V1_STORAGE_KEY,
+      JSON.stringify([
+        { id: "v1-active", text: "Legacy active task", isCompleted: false },
+        { id: "v1-done", text: "Legacy done task", isCompleted: true },
+      ]),
+    );
+
+    const repository = new LocalStorageTaskRepository();
+    render(<App repository={repository} />);
+
+    expect(await screen.findByText("Legacy active task")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Completed (1)" })).toBeInTheDocument();
+    expect(localStorage.getItem(WORKSPACE_V2_STORAGE_KEY)).not.toBeNull();
+  });
+
+  it("recovers from corrupted storage JSON with a dismissible alert banner", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(WORKSPACE_V2_STORAGE_KEY, "{corrupted-json");
+
+    const repository = new LocalStorageTaskRepository();
+    render(<App repository={repository} />);
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/corrupted/i);
+    expect(screen.getByText("No tasks yet. Add one!")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Dismiss storage warning" }));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("synchronizes workspace changes from another tab via storage events", async () => {
+    const repository = new LocalStorageTaskRepository();
+    render(<App repository={repository} />);
+
+    await screen.findByText("No tasks yet. Add one!");
+
+    const remoteSnapshot = {
+      schemaVersion: WORKSPACE_SCHEMA_VERSION,
+      updatedAt: 999,
+      lists: [
+        {
+          id: "remote-list",
+          title: "Remote List",
+          sortMode: "manual" as const,
+          createdAt: 100,
+          updatedAt: 999,
+        },
+      ],
+      tasks: [
+        {
+          id: "remote-task",
+          listId: "remote-list",
+          parentId: null,
+          title: "Synced from another tab",
+          notes: "",
+          dueDate: null,
+          isCompleted: false,
+          isStarred: false,
+          position: 0,
+          createdAt: 100,
+          updatedAt: 999,
+          completedAt: null,
+        },
+      ],
+    };
+
+    act(() => {
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: WORKSPACE_V2_STORAGE_KEY,
+          newValue: JSON.stringify(remoteSnapshot),
+        }),
+      );
+    });
+
+    expect(
+      await screen.findByRole("heading", { level: 2, name: "Remote List" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Synced from another tab")).toBeInTheDocument();
   });
 });
