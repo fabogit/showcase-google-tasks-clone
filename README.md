@@ -77,7 +77,7 @@
 - **1-Level Subtasks & Hierarchy Controls:** Inline subtask creation under root tasks, indent and outdent actions with depth guards, and cascading completion/reopening between parent and subtasks.
 - **Sorting & Accessible Reordering:** Per-list sorting (`My order`, `Date`, `Title`) plus pointer and keyboard drag-and-drop reordering (`@dnd-kit`) for both root tasks and subtasks.
 - **Global Search:** Live case-insensitive search across all lists matching task titles and notes, preserving subtask and list context badges.
-- **Completed Section & Undo Snackbar:** Collapsible `Completed (N)` section with single-click restore and `Delete all completed`, paired with an accessible `<output>` Undo Snackbar for deletions, completions, list removals, and bulk clears.
+- **Completed Section & Undo Snackbar:** Collapsible `Completed (N)` section preserving parent/subtask hierarchy (plus parent context badges for completed subtasks of open parents), single-click cascading restore, and `Delete all completed`, paired with an accessible `<output>` Undo Snackbar for deletions, completions, list removals, and bulk clears.
 - **Extensibility Roadmap:** The async `TaskRepository` interface and `parseWorkspaceSnapshotV2` runtime validator allow drop-in future support for an `IndexedDbTaskRepository`, `BroadcastChannel` multi-tab sync, validated JSON Import/Export, and optional offline PWA caching.
 
 ### ⌨️ Keyboard Shortcuts
@@ -142,8 +142,8 @@ export interface WorkspaceSnapshotV2 {
 
 ### Prerequisites
 
-- **Node.js:** `>= 22.18.0` (`^22.18.0 || ^24.11.0 || >=26.0.0`)
-- **Package Manager:** `pnpm` (`>= 11.x`)
+- **Node.js:** `>= 26.13.1` (pinned in [`.node-version`](.node-version) and `package.json#engines`)
+- **Package Manager:** `pnpm` (`>= 12.23.0`, managed via `packageManager` / Corepack)
 
 ```bash
 corepack enable pnpm

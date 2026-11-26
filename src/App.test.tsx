@@ -201,6 +201,23 @@ describe("App Google Tasks core workflows", () => {
     await user.click(screen.getByRole("button", { name: "Undo" }));
     expect(screen.getByText("Alpha")).toBeInTheDocument();
     expect(screen.getByText("Sub step")).toBeInTheDocument();
+
+    // Re-completing Alpha preserves hierarchy in Completed, and unchecking Alpha reopens both
+    await user.click(screen.getByRole("checkbox", { name: 'Mark task "Alpha" as complete' }));
+    await user.click(screen.getByRole("button", { name: "Completed (2)" }));
+    const completedSubtasksList = screen.getByRole("list", {
+      name: 'Completed subtasks for "Alpha"',
+    });
+    expect(within(completedSubtasksList).getByText("Sub step")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("checkbox", { name: 'Mark task "Alpha" as incomplete' }));
+    expect(screen.getByText("Alpha")).toBeInTheDocument();
+    expect(screen.getByText("Sub step")).toBeInTheDocument();
+
+    // Completing only "Sub step" shows it in Completed with a parent context badge while Alpha stays active
+    await user.click(screen.getByRole("checkbox", { name: 'Mark task "Sub step" as complete' }));
+    await user.click(screen.getByRole("button", { name: "Completed (1)" }));
+    expect(screen.getByText(/Subtask of\s+“?Alpha”?/i)).toBeInTheDocument();
   });
 
   it("automatically migrates legacy v1 tasks into v2 workspace on load", async () => {

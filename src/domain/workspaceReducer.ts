@@ -338,11 +338,21 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         });
       }
 
-      // Uncompleting a subtask also reopens its completed parent so no active
+      // Reopening a root task also reopens all of its completed subtasks.
+      // Reopening a subtask also reopens its completed parent so no active
       // subtask remains orphaned under a completed parent.
       const reopenParentId = target.parentId;
+      const isReopeningRoot = reopenParentId === null;
       const nextTasks = tasks.map((task) => {
         if (task.id === target.id) {
+          return {
+            ...task,
+            isCompleted: false,
+            completedAt: null,
+            updatedAt: action.now,
+          };
+        }
+        if (isReopeningRoot && task.parentId === target.id && task.isCompleted) {
           return {
             ...task,
             isCompleted: false,

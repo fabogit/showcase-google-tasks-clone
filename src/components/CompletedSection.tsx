@@ -1,27 +1,75 @@
 import { useState, type ReactElement } from "react";
 import { formatDueDateLabel } from "../domain/calendarDate";
-import type { TaskEntity, TaskListEntity } from "../domain/types";
-import { ChevronDownIcon, ChevronRightIcon, TrashIcon } from "./Icons";
+import type { CompletedTaskGroup } from "../domain/selectors";
+import type { TaskEntity } from "../domain/types";
+import { ChevronDownIcon, ChevronRightIcon, SubtaskIcon, TrashIcon } from "./Icons";
 
 interface CompletedSectionProps {
-  readonly completedTasks: readonly TaskEntity[];
-  readonly lists: readonly TaskListEntity[];
+  readonly completedItems: readonly CompletedTaskGroup[];
+  readonly completedCount: number;
   readonly onToggleComplete: (taskId: string) => void;
   readonly onDeleteTask: (taskId: string) => void;
   readonly onClearCompleted: () => void;
 }
 
 export function CompletedSection({
-  completedTasks,
+  completedItems,
+  completedCount,
   onToggleComplete,
   onDeleteTask,
   onClearCompleted,
 }: CompletedSectionProps): ReactElement | null {
   const [isOpen, setIsOpen] = useState(false);
 
-  if (completedTasks.length === 0) {
+  if (completedCount === 0) {
     return null;
   }
+
+  const renderCompletedRow = (
+    task: TaskEntity,
+    activeParentTitle: string | null,
+    isSubtask: boolean,
+  ): ReactElement => (
+    <div className="task-row">
+      <input
+        type="checkbox"
+        checked={task.isCompleted}
+        onChange={() => onToggleComplete(task.id)}
+        className="task-checkbox"
+        aria-label={`Mark task "${task.title}" as incomplete`}
+      />
+
+      <div className="task-main">
+        <span className="task-text no-edit">{task.title}</span>
+        {task.notes.trim().length > 0 ? <p className="task-notes-preview">{task.notes}</p> : null}
+        {task.dueDate || activeParentTitle || isSubtask ? (
+          <div className="completed-meta-row">
+            {task.dueDate ? (
+              <span className="completed-due-label">{formatDueDateLabel(task.dueDate)}</span>
+            ) : null}
+            {activeParentTitle ? (
+              <span className="completed-parent-badge">
+                <SubtaskIcon size={12} />
+                <span>Subtask of &ldquo;{activeParentTitle}&rdquo;</span>
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+
+      <div className="task-actions">
+        <button
+          type="button"
+          onClick={() => onDeleteTask(task.id)}
+          className="icon-button icon-button-sm delete-icon-button"
+          aria-label={`Delete task "${task.title}"`}
+          title="Delete task"
+        >
+          <TrashIcon />
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <section className="completed-section" aria-label="Completed tasks">
@@ -34,7 +82,7 @@ export function CompletedSection({
           onClick={() => setIsOpen((prev) => !prev)}
         >
           {isOpen ? <ChevronDownIcon /> : <ChevronRightIcon />}
-          <span>Completed ({completedTasks.length})</span>
+          <span>Completed ({completedCount})</span>
         </button>
 
         <button
@@ -49,36 +97,26 @@ export function CompletedSection({
 
       {isOpen ? (
         <ul id="completed-tasks-list" className="task-list completed-task-list">
-          {completedTasks.map((task) => (
-            <li key={task.id} className="task-item completed">
-              <div className="task-row">
-                <input
-                  type="checkbox"
-                  checked={task.isCompleted}
-                  onChange={() => onToggleComplete(task.id)}
-                  className="task-checkbox"
-                  aria-label={`Mark task "${task.title}" as incomplete`}
-                />
-
-                <div className="task-main">
-                  <span className="task-text no-edit">{task.title}</span>
-                  {task.dueDate ? (
-                    <span className="completed-due-label">{formatDueDateLabel(task.dueDate)}</span>
-                  ) : null}
-                </div>
-
-                <div className="task-actions">
-                  <button
-                    type="button"
-                    onClick={() => onDeleteTask(task.id)}
-                    className="icon-button icon-button-sm delete-icon-button"
-                    aria-label={`Delete task "${task.title}"`}
-                    title="Delete task"
-                  >
-                    <TrashIcon />
-                  </button>
-                </div>
+          {completedItems.map((item) => (
+            <li key={item.task.id} className="completed-tree-group">
+              <div
+                className={`task-item completed ${item.activeParentTitle ? "subtask-item" : ""}`}
+              >
+                {renderCompletedRow(item.task, item.activeParentTitle, false)}
               </div>
+
+              {item.subtasks.length > 0 ? (
+                <ul
+                  className="subtask-list completed-subtask-list"
+                  aria-label={`Completed subtasks for "${item.task.title}"`}
+                >
+                  {item.subtasks.map((subtask) => (
+                    <li key={subtask.id} className="task-item subtask-item completed">
+                      {renderCompletedRow(subtask, null, true)}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
             </li>
           ))}
         </ul>
